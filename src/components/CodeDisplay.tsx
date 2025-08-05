@@ -32,6 +32,7 @@ export const CodeDisplay = ({ code, onNewUpload }: CodeDisplayProps) => {
   };
 
   const downloadUrl = `${window.location.origin}/download/${code}`;
+  const directDownloadUrl = `https://opsxikfrgkyrbxnqdznm.supabase.co/functions/v1/download-file/${code}`;
 
   return (
     <div className="w-full max-w-2xl mx-auto space-y-6 animate-slide-up">
@@ -110,7 +111,8 @@ export const CodeDisplay = ({ code, onNewUpload }: CodeDisplayProps) => {
                 2
               </div>
               <p className="text-sm text-foreground">
-                Введите команду: <code className="bg-muted px-1 rounded text-xs">/cd create {code}</code>
+                Используйте прямую ссылку: <br/>
+                <code className="bg-muted px-1 rounded text-xs break-all">{directDownloadUrl}</code>
               </p>
             </div>
             
@@ -119,7 +121,7 @@ export const CodeDisplay = ({ code, onNewUpload }: CodeDisplayProps) => {
                 3
               </div>
               <p className="text-sm text-foreground">
-                Готово! Ваш кастомный диск создан
+                Или введите команду: <code className="bg-muted px-1 rounded text-xs">/cd create {code}</code>
               </p>
             </div>
             
