@@ -9,7 +9,7 @@ const Download = () => {
     if (!code) return;
 
     // Redirect to direct download URL
-    const directDownloadUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/download-file/${code}`;
+    const directDownloadUrl = `https://opsxikfrgkyrbxnqdznm.supabase.co/functions/v1/download-file/${code}`;
     window.location.href = directDownloadUrl;
   }, [code]);
 
