@@ -14,7 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      mp3_uploads: {
+        Row: {
+          code: string
+          created_at: string
+          download_count: number | null
+          file_path: string
+          file_size: number
+          filename: string
+          id: string
+          mime_type: string
+          original_filename: string
+        }
+        Insert: {
+          code?: string
+          created_at?: string
+          download_count?: number | null
+          file_path: string
+          file_size: number
+          filename: string
+          id?: string
+          mime_type?: string
+          original_filename: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          download_count?: number | null
+          file_path?: string
+          file_size?: number
+          filename?: string
+          id?: string
+          mime_type?: string
+          original_filename?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,6 +58,10 @@ export type Database = {
       generate_unique_code: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      increment_download_count: {
+        Args: { upload_code: string }
+        Returns: undefined
       }
     }
     Enums: {

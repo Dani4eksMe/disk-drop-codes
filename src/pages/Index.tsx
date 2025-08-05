@@ -1,12 +1,33 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from 'react';
+import { Header } from '@/components/Header';
+import { Footer } from '@/components/Footer';
+import { FileUpload } from '@/components/FileUpload';
+import { CodeDisplay } from '@/components/CodeDisplay';
 
 const Index = () => {
+  const [uploadedCode, setUploadedCode] = useState<string | null>(null);
+
+  const handleUploadComplete = (code: string) => {
+    setUploadedCode(code);
+  };
+
+  const handleNewUpload = () => {
+    setUploadedCode(null);
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen bg-background">
+      <Header />
+      
+      <main className="container mx-auto px-4 pb-12">
+        {!uploadedCode ? (
+          <FileUpload onUploadComplete={handleUploadComplete} />
+        ) : (
+          <CodeDisplay code={uploadedCode} onNewUpload={handleNewUpload} />
+        )}
+      </main>
+
+      <Footer />
     </div>
   );
 };
