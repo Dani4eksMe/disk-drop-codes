@@ -32,7 +32,7 @@ export const CodeDisplay = ({ code, onNewUpload }: CodeDisplayProps) => {
   };
 
   const downloadUrl = `${window.location.origin}/download/${code}`;
-  const directDownloadUrl = `https://opsxikfrgkyrbxnqdznm.supabase.co/functions/v1/download-file/${code}`;
+  const directDownloadUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/download-file/${code}`;
 
   return (
     <div className="w-full max-w-2xl mx-auto space-y-6 animate-slide-up">
@@ -112,7 +112,7 @@ export const CodeDisplay = ({ code, onNewUpload }: CodeDisplayProps) => {
               </div>
               <p className="text-sm text-foreground">
                 Используйте прямую ссылку: <br/>
-                <code className="bg-muted px-1 rounded text-xs break-all">{directDownloadUrl}</code>
+                <code className="bg-muted px-1 rounded text-xs break-all">Ссылка для скачивания готова</code>
               </p>
             </div>
             
