@@ -31,8 +31,8 @@ export const CodeDisplay = ({ code, onNewUpload }: CodeDisplayProps) => {
     }
   };
 
-  const downloadUrl = `${window.location.origin}/download/${code}`;
-  const directDownloadUrl = `https://opsxikfrgkyrbxnqdznm.supabase.co/functions/v1/download-file/${code}`;
+  const downloadUrl = `http://localhost:3001/api/download/${code}`;
+  const directDownloadUrl = `http://localhost:3001/api/download/${code}`;
 
   return (
     <div className="w-full max-w-2xl mx-auto space-y-6 animate-slide-up">

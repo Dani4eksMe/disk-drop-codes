@@ -1,0 +1,4 @@
+uploads/
+database/
+node_modules/
+*.log

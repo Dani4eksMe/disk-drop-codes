@@ -8,8 +8,8 @@ const Download = () => {
   useEffect(() => {
     if (!code) return;
 
-    // Redirect to direct download URL
-    const directDownloadUrl = `https://opsxikfrgkyrbxnqdznm.supabase.co/functions/v1/download-file/${code}`;
+    // Redirect to local download URL
+    const directDownloadUrl = `http://localhost:3001/api/download/${code}`;
     window.location.href = directDownloadUrl;
   }, [code]);
 

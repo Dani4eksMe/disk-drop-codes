@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 
 interface FileUploadProps {
   onUploadComplete: (code: string) => void;
@@ -46,43 +45,30 @@ export const FileUpload = ({ onUploadComplete }: FileUploadProps) => {
     setUploadProgress(0);
 
     try {
-      // Generate unique filename
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const filePath = `uploads/${fileName}`;
-
-      // Upload file to Supabase storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('mp3-files')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
-
-      if (uploadError) throw uploadError;
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('file', file);
 
       setUploadProgress(80);
 
-      // Save file info to database
-      const { data: dbData, error: dbError } = await supabase
-        .from('mp3_uploads')
-        .insert({
-          filename: fileName,
-          original_filename: file.name,
-          file_path: filePath,
-          file_size: file.size,
-          mime_type: file.type
-        })
-        .select('code')
-        .single();
+      // Upload file to local server
+      const response = await fetch('http://localhost:3001/api/upload', {
+        method: 'POST',
+        body: formData
+      });
 
-      if (dbError) throw dbError;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Upload failed');
+      }
+
+      const data = await response.json();
 
       setUploadProgress(100);
       setUploadStatus('success');
       
       setTimeout(() => {
-        onUploadComplete(dbData.code);
+        onUploadComplete(data.code);
       }, 1000);
 
     } catch (error) {
