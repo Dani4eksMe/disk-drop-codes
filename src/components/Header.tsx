@@ -24,6 +24,9 @@ export const Header = () => {
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
           Загружайте MP3 файлы и получайте уникальные коды для создания кастомных дисков в игре
         </p>
+        <p className="text-sm text-yellow-600 dark:text-yellow-400 mt-2">
+          ⚠️ Файлы доступны в течение 30 минут после загрузки
+        </p>
 
         {/* Audio Wave Animation */}
         <div className="flex justify-center mt-6">

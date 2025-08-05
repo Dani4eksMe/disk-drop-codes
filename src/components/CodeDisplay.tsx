@@ -122,6 +122,12 @@ export const CodeDisplay = ({ code, onNewUpload }: CodeDisplayProps) => {
                 Готово! Ваш кастомный диск создан
               </p>
             </div>
+            
+            <div className="mt-4 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+              <p className="text-sm text-yellow-600 dark:text-yellow-400">
+                ⚠️ Файл будет доступен в течение 30 минут после загрузки
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>
