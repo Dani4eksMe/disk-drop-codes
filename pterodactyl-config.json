@@ -1,0 +1,28 @@
+{
+  "server": {
+    "host": "yx25-fga.creepercloud.io",
+    "port": 26441,
+    "protocol": "https"
+  },
+  "deployment": {
+    "auto_deploy": true,
+    "build_command": "npm run build",
+    "start_command": "npm start",
+    "files_to_upload": [
+      "server/",
+      "dist/",
+      "package.json",
+      "README.md"
+    ]
+  },
+  "server_config": {
+    "node_version": "18+",
+    "memory": "512MB",
+    "disk": "2GB",
+    "startup": "npm start",
+    "environment": {
+      "NODE_ENV": "production",
+      "PORT": "25565"
+    }
+  }
+}
