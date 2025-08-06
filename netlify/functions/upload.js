@@ -1,7 +1,19 @@
+const { createClient } = require('webdav');
 const multipart = require('lambda-multipart-parser');
 
-// Simple in-memory storage for demo (in production use database)
-const fileStorage = new Map();
+// WebDAV configuration
+const WEBDAV_URL = 'https://www.megadisk.net/cloud11/remote.php/webdav/';
+const WEBDAV_USERNAME = '89027447339da@gmail.com';
+const WEBDAV_PASSWORD = 'WGRPI-QFWNJ-DGBHY-OZQUS';
+
+// Create WebDAV client
+const client = createClient(WEBDAV_URL, {
+  username: WEBDAV_USERNAME,
+  password: WEBDAV_PASSWORD
+});
+
+// Simple in-memory storage for metadata
+const fileMetadata = new Map();
 
 // Generate unique 6-character code
 function generateUniqueCode() {
@@ -12,7 +24,7 @@ function generateUniqueCode() {
   }
   
   // Check if code exists
-  if (fileStorage.has(code)) {
+  if (fileMetadata.has(code)) {
     return generateUniqueCode(); // Recursive retry
   }
   
@@ -77,21 +89,39 @@ exports.handler = async (event, context) => {
 
     // Generate unique code
     const code = generateUniqueCode();
-    
-    // Store file data in memory (base64 encoded)
-    const fileData = {
+    const timestamp = Date.now();
+    const fileName = `${code}_${timestamp}.mp3`;
+    const remotePath = `/mp3-uploads/${fileName}`;
+
+    try {
+      // Ensure directory exists
+      await client.createDirectory('/mp3-uploads/', { recursive: true });
+    } catch (error) {
+      // Directory might already exist, ignore error
+      console.log('Directory creation info:', error.message);
+    }
+
+    // Upload file to WebDAV
+    await client.putFileContents(remotePath, file.content, {
+      contentType: file.contentType,
+      overwrite: true
+    });
+
+    // Store metadata
+    const metadata = {
       code,
       filename: file.filename,
+      originalFilename: file.filename,
+      remotePath,
       contentType: file.contentType,
-      content: file.content.toString('base64'),
       size: file.content.length,
       createdAt: new Date().toISOString(),
       downloadCount: 0
     };
 
-    fileStorage.set(code, fileData);
+    fileMetadata.set(code, metadata);
 
-    console.log(`File uploaded with code: ${code}, size: ${file.content.length} bytes`);
+    console.log(`File uploaded to WebDAV: ${code}, path: ${remotePath}, size: ${file.content.length} bytes`);
 
     return {
       statusCode: 200,
@@ -104,7 +134,7 @@ exports.handler = async (event, context) => {
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: 'Upload failed' })
+      body: JSON.stringify({ error: 'Upload failed: ' + error.message })
     };
   }
 };
