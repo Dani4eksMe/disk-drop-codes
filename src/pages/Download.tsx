@@ -8,8 +8,8 @@ const Download = () => {
   useEffect(() => {
     if (!code) return;
 
-    // Redirect to local download URL
-    const directDownloadUrl = `http://localhost:3001/api/download/${code}`;
+    // Redirect to Netlify function download URL
+    const directDownloadUrl = `/api/download/${code}`;
     window.location.href = directDownloadUrl;
   }, [code]);
 

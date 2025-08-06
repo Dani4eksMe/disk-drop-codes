@@ -31,8 +31,8 @@ export const CodeDisplay = ({ code, onNewUpload }: CodeDisplayProps) => {
     }
   };
 
-  const downloadUrl = `http://localhost:3001/api/download/${code}`;
-  const directDownloadUrl = `http://localhost:3001/api/download/${code}`;
+  const downloadUrl = `/api/download/${code}`;
+  const directDownloadUrl = `${window.location.origin}/api/download/${code}`;
 
   return (
     <div className="w-full max-w-2xl mx-auto space-y-6 animate-slide-up">

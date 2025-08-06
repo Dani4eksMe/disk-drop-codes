@@ -51,8 +51,8 @@ export const FileUpload = ({ onUploadComplete }: FileUploadProps) => {
 
       setUploadProgress(80);
 
-      // Upload file to local server
-      const response = await fetch('http://localhost:3001/api/upload', {
+      // Upload file to Netlify function
+      const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData
       });
