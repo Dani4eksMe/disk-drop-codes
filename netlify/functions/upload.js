@@ -1,24 +1,32 @@
 const multipart = require('lambda-multipart-parser');
-const { createClient } = require('webdav');
 
-// WebDAV client configuration
-const webdavClient = createClient('https://www.megadisk.net/cloud11/remote.php/webdav/', {
-  username: '89027447339da@gmail.com',
-  password: 'WGRPI-QFWNJ-DGBHY-OZQUS'
-});
-
-// Simple in-memory storage for demo (in production use a database)
+// Simple in-memory storage for demo (in production use database)
 const fileStorage = new Map();
 
+// Generate unique 6-character code
+function generateUniqueCode() {
+  const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  let code = '';
+  for (let i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  
+  // Check if code exists
+  if (fileStorage.has(code)) {
+    return generateUniqueCode(); // Recursive retry
+  }
+  
+  return code;
+}
+
 exports.handler = async (event, context) => {
-  // Set CORS headers
+  // Enable CORS
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS'
   };
 
-  // Handle preflight requests
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 200,
@@ -50,7 +58,7 @@ exports.handler = async (event, context) => {
     const file = result.files[0];
     
     // Validate file type
-    if (!file.contentType.startsWith('audio/')) {
+    if (!file.contentType || !file.contentType.startsWith('audio/')) {
       return {
         statusCode: 400,
         headers,
@@ -68,78 +76,35 @@ exports.handler = async (event, context) => {
     }
 
     // Generate unique code
-    const generateCode = () => {
-      const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-      let code = '';
-      for (let i = 0; i < 6; i++) {
-        code += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
-      return code;
+    const code = generateUniqueCode();
+    
+    // Store file data in memory (base64 encoded)
+    const fileData = {
+      code,
+      filename: file.filename,
+      contentType: file.contentType,
+      content: file.content.toString('base64'),
+      size: file.content.length,
+      createdAt: new Date().toISOString(),
+      downloadCount: 0
     };
 
-    const code = generateCode();
-    const timestamp = Date.now();
-    const fileExtension = file.filename.split('.').pop() || 'mp3';
-    const webdavFileName = `${code}_${timestamp}.${fileExtension}`;
-    const webdavPath = `/mp3-uploads/${webdavFileName}`;
+    fileStorage.set(code, fileData);
 
-    try {
-      // Create directory if it doesn't exist
-      try {
-        await webdavClient.createDirectory('/mp3-uploads');
-      } catch (dirError) {
-        // Directory might already exist, ignore error
-      }
+    console.log(`File uploaded with code: ${code}, size: ${file.content.length} bytes`);
 
-      // Upload file to WebDAV
-      await webdavClient.putFileContents(webdavPath, file.content, {
-        contentType: file.contentType,
-        overwrite: true
-      });
-
-      // Store file metadata
-      const fileData = {
-        code,
-        filename: file.filename,
-        contentType: file.contentType,
-        size: file.content.length,
-        uploadTime: timestamp,
-        webdavPath,
-        downloadCount: 0
-      };
-
-      // Store in memory (in production, use a proper database)
-      fileStorage.set(code, fileData);
-
-      console.log(`File uploaded successfully: ${code} -> ${webdavPath}`);
-
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify({ 
-          code,
-          message: 'File uploaded successfully to WebDAV storage'
-        })
-      };
-
-    } catch (webdavError) {
-      console.error('WebDAV upload error:', webdavError);
-      return {
-        statusCode: 500,
-        headers,
-        body: JSON.stringify({ 
-          error: 'Failed to upload to WebDAV storage',
-          details: webdavError.message 
-        })
-      };
-    }
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({ code })
+    };
 
   } catch (error) {
     console.error('Upload error:', error);
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: 'Upload failed: ' + error.message })
+      body: JSON.stringify({ error: 'Upload failed' })
     };
   }
 };

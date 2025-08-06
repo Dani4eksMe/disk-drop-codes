@@ -1,12 +1,4 @@
-const { createClient } = require('webdav');
-
-// WebDAV client configuration
-const webdavClient = createClient('https://www.megadisk.net/cloud11/remote.php/webdav/', {
-  username: '89027447339da@gmail.com',
-  password: 'WGRPI-QFWNJ-DGBHY-OZQUS'
-});
-
-// Simple in-memory storage for demo (in production use a database)
+// Simple in-memory storage (shared with upload function)
 const fileStorage = new Map();
 
 exports.handler = async (event, context) => {
@@ -37,15 +29,15 @@ exports.handler = async (event, context) => {
     const pathParts = event.path.split('/');
     const code = pathParts[pathParts.length - 1];
 
-    if (!code || code.length !== 6) {
+    if (!code) {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ error: 'Invalid code format' })
+        body: JSON.stringify({ error: 'Code is required' })
       };
     }
 
-    // Get file metadata from storage
+    // Get file from storage
     const fileData = fileStorage.get(code);
     
     if (!fileData) {
@@ -57,65 +49,49 @@ exports.handler = async (event, context) => {
     }
 
     // Check if file is expired (30 minutes)
-    const thirtyMinutesAgo = Date.now() - (30 * 60 * 1000);
-    if (fileData.uploadTime < thirtyMinutesAgo) {
-      // File expired, clean up
-      try {
-        await webdavClient.deleteFile(fileData.webdavPath);
-        fileStorage.delete(code);
-      } catch (cleanupError) {
-        console.error('Cleanup error:', cleanupError);
-      }
-      
+    const createdAt = new Date(fileData.createdAt);
+    const now = new Date();
+    const thirtyMinutes = 30 * 60 * 1000;
+    
+    if (now - createdAt > thirtyMinutes) {
+      // Remove expired file
+      fileStorage.delete(code);
       return {
         statusCode: 404,
         headers,
-        body: JSON.stringify({ error: 'File expired and has been removed' })
+        body: JSON.stringify({ error: 'File expired' })
       };
     }
 
-    try {
-      // Download file from WebDAV
-      const fileBuffer = await webdavClient.getFileContents(fileData.webdavPath);
-      
-      // Increment download count
-      fileData.downloadCount++;
-      fileStorage.set(code, fileData);
+    // Increment download count
+    fileData.downloadCount++;
 
-      // Return file with proper headers
-      return {
-        statusCode: 200,
-        headers: {
-          ...headers,
-          'Content-Type': fileData.contentType,
-          'Content-Disposition': `attachment; filename="${fileData.filename}"`,
-          'Content-Length': fileData.size.toString(),
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
-        },
-        body: fileBuffer.toString('base64'),
-        isBase64Encoded: true
-      };
+    // Convert base64 back to binary
+    const fileBuffer = Buffer.from(fileData.content, 'base64');
 
-    } catch (webdavError) {
-      console.error('WebDAV download error:', webdavError);
-      return {
-        statusCode: 500,
-        headers,
-        body: JSON.stringify({ 
-          error: 'Failed to download from WebDAV storage',
-          details: webdavError.message 
-        })
-      };
-    }
+    console.log(`File downloaded: ${code}, downloads: ${fileData.downloadCount}`);
+
+    return {
+      statusCode: 200,
+      headers: {
+        ...headers,
+        'Content-Type': fileData.contentType,
+        'Content-Disposition': `attachment; filename="${fileData.filename}"`,
+        'Content-Length': fileData.size.toString(),
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      },
+      body: fileBuffer.toString('base64'),
+      isBase64Encoded: true
+    };
 
   } catch (error) {
     console.error('Download error:', error);
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: 'Download failed: ' + error.message })
+      body: JSON.stringify({ error: 'Download failed' })
     };
   }
 };

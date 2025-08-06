@@ -1,12 +1,4 @@
-const { createClient } = require('webdav');
-
-// WebDAV client configuration
-const webdavClient = createClient('https://www.megadisk.net/cloud11/remote.php/webdav/', {
-  username: '89027447339da@gmail.com',
-  password: 'WGRPI-QFWNJ-DGBHY-OZQUS'
-});
-
-// Simple in-memory storage for demo (in production use a database)
+// Simple in-memory storage (shared with other functions)
 const fileStorage = new Map();
 
 exports.handler = async (event, context) => {
@@ -33,24 +25,18 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const thirtyMinutesAgo = Date.now() - (30 * 60 * 1000);
+    const now = new Date();
+    const thirtyMinutes = 30 * 60 * 1000;
     let deletedCount = 0;
-    let errors = [];
 
-    // Check all stored files for expiration
+    // Check all files for expiration
     for (const [code, fileData] of fileStorage.entries()) {
-      if (fileData.uploadTime < thirtyMinutesAgo) {
-        try {
-          // Delete from WebDAV
-          await webdavClient.deleteFile(fileData.webdavPath);
-          // Remove from memory storage
-          fileStorage.delete(code);
-          deletedCount++;
-          console.log(`Cleaned up expired file: ${code}`);
-        } catch (deleteError) {
-          console.error(`Failed to delete ${code}:`, deleteError);
-          errors.push(`Failed to delete ${code}: ${deleteError.message}`);
-        }
+      const createdAt = new Date(fileData.createdAt);
+      
+      if (now - createdAt > thirtyMinutes) {
+        fileStorage.delete(code);
+        deletedCount++;
+        console.log(`Deleted expired file: ${code}`);
       }
     }
 
@@ -60,7 +46,7 @@ exports.handler = async (event, context) => {
       body: JSON.stringify({
         message: 'Cleanup completed',
         deletedCount,
-        errors: errors.length > 0 ? errors : undefined
+        remainingFiles: fileStorage.size
       })
     };
 
@@ -69,7 +55,7 @@ exports.handler = async (event, context) => {
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: 'Cleanup failed: ' + error.message })
+      body: JSON.stringify({ error: 'Cleanup failed' })
     };
   }
 };
