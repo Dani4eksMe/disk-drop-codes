@@ -7,11 +7,14 @@ const fs = require('fs-extra');
 const { v4: uuidv4 } = require('uuid');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Serve static files from dist directory
+app.use(express.static(path.join(__dirname, 'dist')));
 
 // Ensure directories exist
 const uploadsDir = path.join(__dirname, 'uploads');
@@ -258,6 +261,11 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
+// Serve React app for all other routes
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+});
+
 // Cleanup on startup
 function cleanupOnStartup() {
   const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
@@ -280,30 +288,47 @@ function cleanupOnStartup() {
 }
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Upload endpoint: http://localhost:${PORT}/api/upload`);
-  console.log(`Download endpoint: http://localhost:${PORT}/api/download/:code`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`📁 Upload endpoint: http://localhost:${PORT}/api/upload`);
+  console.log(`⬇️  Download endpoint: http://localhost:${PORT}/api/download/:code`);
+  console.log(`🌐 Web interface: http://localhost:${PORT}`);
   
   // Cleanup expired files on startup
   cleanupOnStartup();
   
   // Schedule cleanup every 10 minutes
   setInterval(() => {
-    console.log('Running scheduled cleanup...');
-    fetch(`http://localhost:${PORT}/api/cleanup`, { method: 'POST' })
-      .catch(err => console.error('Scheduled cleanup error:', err));
+    console.log('🧹 Running scheduled cleanup...');
+    // Simple cleanup without fetch
+    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+    
+    db.all('SELECT * FROM mp3_uploads WHERE created_at < ?', [thirtyMinutesAgo], (err, rows) => {
+      if (err) {
+        console.error('Scheduled cleanup error:', err);
+        return;
+      }
+      
+      if (rows && rows.length > 0) {
+        console.log(`🗑️  Cleaning up ${rows.length} expired files...`);
+        
+        rows.forEach((row) => {
+          fs.unlink(row.file_path, () => {});
+          db.run('DELETE FROM mp3_uploads WHERE id = ?', [row.id]);
+        });
+      }
+    });
   }, 10 * 60 * 1000);
 });
 
 // Graceful shutdown
 process.on('SIGINT', () => {
-  console.log('Shutting down server...');
+  console.log('🛑 Shutting down server...');
   db.close((err) => {
     if (err) {
       console.error('Error closing database:', err);
     } else {
-      console.log('Database connection closed.');
+      console.log('✅ Database connection closed.');
     }
     process.exit(0);
   });
